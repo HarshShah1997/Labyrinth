@@ -4,6 +4,7 @@
 #else
 #include <GL/gl.h>
 #include <GL/glut.h>
+#include <GL/freeglut.h>
 #endif
 
 #include <iostream>
@@ -17,6 +18,7 @@
 
 void display();
 void reviewpoint();
+void RenderString(float x, float y, void *font, const char* string, float r, float g, float b);
 
 static Cell *cell;
 static int width, height;	// the size of maze
@@ -48,6 +50,16 @@ static int timeGetTime() {
 
 static inline Cell & cellXY(int x, int y) {
     return cell[y * width + x];
+}
+
+void RenderString(float x, float y, void *font, const char* string, float r, float g, float b)
+{  
+    char *c;
+
+    glColor3f(r, g, b); 
+    glRasterPos2f(x, y);
+
+    glutBitmapString(font, string);
 }
 
 // remove the line between two connected cells
@@ -267,7 +279,7 @@ void reshape( int w, int h ){
 
 void draw_texture()
 {
-    if (!loadTGA("textures/roughrock.tga", 13)) {
+    if (!loadTGA("textures/stone3_b.tga", 13)) {
         std::cout << "texture.tga not found\n";
     }
     glEnable(GL_TEXTURE_2D);
@@ -297,6 +309,8 @@ void display()
     //glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear( GL_COLOR_BUFFER_BIT );
     draw_texture();
+    //RenderString(0.0f, 0.0f, GLUT_BITMAP_TIMES_ROMAN_24, "Hello", 1.0f, 0.0f, 0.0f);
+
     glColor3f( 1-R, 1-G, 1-B );	// the color is the negative of background color
     //glColor3f(1, 1, 0);
 
@@ -424,6 +438,23 @@ void path_finding()
     }
 }
 
+void display_win()
+{
+    /*glBegin(GL_QUADS);
+        glColor3f(0, 0, 0);
+        glVertex2f(view_Left, view_Bottom);
+
+        glVertex2f(view_Right, view_Bottom);
+
+        glVertex2f(view_Right, view_Up);
+
+        glVertex2d(view_Left, view_Up);
+    glEnd();*/
+    glClearColor(0, 0, 0, 0);
+    //RenderString(0.0f, 0.0f, GLUT_BITMAP_TIMES_ROMAN_24, "Hello", 1.0f, 0.0f, 0.0f);
+    glutSwapBuffers();
+}
+
 void goal_ceremony()
 {
     static int count = 0;
@@ -434,7 +465,10 @@ void goal_ceremony()
 
     oldTime = currTime;
     count++;
-    if( count > 0/*300*/) state++;
+
+    //display_win();
+
+    if( count > 0) state++;
     gb_finder->UpdateStatus();
 }
 

@@ -12,7 +12,7 @@ miro : $(OBJ)
 	$(CC) -o miro $(OBJ) $(LDFLAGS)
 
 miro.o : miro.cpp miro.h pathfinder.h
-	$(CC) -c -g miro.cpp
+	$(CC) -c -g -fpermissive miro.cpp
 
 pathfinder.o : pathfinder.cpp pathfinder.h miro.h
 	$(CC) -c -g pathfinder.cpp

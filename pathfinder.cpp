@@ -8,13 +8,14 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <iostream>
 
 #include "pathfinder.h"
+#include "tga.h"
 
 void PathFinder::set_dest( Direction new_dest ){
 	this->init_dest = Dest;
 	this->Dest = new_dest;
-	rolling_status = 0;
 	ismoving =true;
 }
 
@@ -80,17 +81,26 @@ void PathFinder::lists(){
 	glEndList();
 
 	glNewList( Body, GL_COMPILE );
-		glBegin( GL_POLYGON );
-			glEdgeFlag( GL_TRUE );
-			//glVertex2f( 0, 0 );
+            if (!loadTGA("textures/lava.tga", 14)) {
+                std::cout << "not found\n";
+            }
+
+            glEnable(GL_TEXTURE_2D);
+            glBindTexture(GL_TEXTURE_2D, 14);
+
+            glBegin( GL_POLYGON );
+                glEdgeFlag( GL_TRUE );
+                        //glVertex2f( 0, 0 );
 			//glVertex2f( 40, 0  );
 			//glVertex2f( 40, 40 );
 			//glVertex2f( 0, 40 );
 			//glVertex2f( 0, 0 ); //Do not uncomment this
-                                    for (float angle = 0; angle < 2 * M_PI; angle = angle + 0.01) {
-                                                        glVertex2f(20 * cos(angle) + 20, 20 * sin(angle) + 20);
-                                                                    }
+                        for (float angle = 0; angle < 2 * M_PI; angle = angle + 0.01) {
+                            glTexCoord2f(0.5 * cos(angle) + 0.5, 0.5 * sin(angle) + 0.5);
+                            glVertex2f(20 * cos(angle) + 20, 20 * sin(angle) + 20);
+                        }
 		glEnd();
+                glDisable(GL_TEXTURE_2D);
 	glEndList();
 
 }
