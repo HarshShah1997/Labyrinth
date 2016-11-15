@@ -1,6 +1,6 @@
 UNAME := $(shell uname -s)
 CC = g++
-OBJ = miro.o pathfinder.o
+OBJ = miro.o pathfinder.o tga.o
 LDFLAGS = -lGL -lGLU -lglut
 
 # Mac OS
@@ -16,6 +16,9 @@ miro.o : miro.cpp miro.h pathfinder.h
 
 pathfinder.o : pathfinder.cpp pathfinder.h miro.h
 	$(CC) -c -g pathfinder.cpp
+
+tga.o : tga.c tga.h miro.h pathfinder.h
+	$(CC) -c -g tga.c -fpermissive
 
 clean :
 	rm $(OBJ)

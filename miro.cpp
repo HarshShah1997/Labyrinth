@@ -267,7 +267,7 @@ void reshape( int w, int h ){
 
 void draw_texture()
 {
-    if (!loadTGA("roughrock.tga", 13)) {
+    if (!loadTGA("textures/roughrock.tga", 13)) {
         std::cout << "texture.tga not found\n";
     }
     glEnable(GL_TEXTURE_2D);
