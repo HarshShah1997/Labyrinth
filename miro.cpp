@@ -11,10 +11,10 @@
 #include <ctime>
 #include <sys/time.h>
 #include <cstring>
+#include <SOIL.h>
 
 #include "miro.h"
 #include "pathfinder.h"
-#include "tga.h"
 
 void display();
 void reviewpoint();
@@ -52,14 +52,14 @@ static inline Cell & cellXY(int x, int y) {
     return cell[y * width + x];
 }
 
-void RenderString(float x, float y, void *font, const char* string, float r, float g, float b)
+void RenderString(float x, float y, void *font, const unsigned char* msg, float r, float g, float b)
 {  
     char *c;
 
     glColor3f(r, g, b); 
     glRasterPos2f(x, y);
 
-    glutBitmapString(font, string);
+    glutBitmapString(font, msg);
 }
 
 // remove the line between two connected cells
@@ -279,11 +279,12 @@ void reshape( int w, int h ){
 
 void draw_texture()
 {
-    if (!loadTGA("textures/stone3_b.tga", 13)) {
-        std::cout << "texture.tga not found\n";
+    GLuint id = 13;
+    if (!loadTexture("textures/celestial002.png", &id)) {
+        std::cout << "Texture not found\n";
     }
     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, 13);
+    glBindTexture(GL_TEXTURE_2D, id);
     glBegin(GL_QUADS);
         glTexCoord2f(0, 0);
         glVertex2f(view_Left, view_Bottom);

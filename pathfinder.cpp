@@ -9,9 +9,23 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <SOIL.h>
 
 #include "pathfinder.h"
-#include "tga.h"
+
+bool loadTexture(char *path, GLuint *texture){
+    *texture = SOIL_load_OGL_texture(path,
+            SOIL_LOAD_AUTO,
+            SOIL_CREATE_NEW_ID,
+            SOIL_FLAG_NTSC_SAFE_RGB | SOIL_FLAG_MULTIPLY_ALPHA
+            );
+    if(*texture == 0){
+        return false;
+    } else {
+        return true;
+    }
+}
+
 
 void PathFinder::set_dest( Direction new_dest ){
 	this->init_dest = Dest;
@@ -81,12 +95,13 @@ void PathFinder::lists(){
 	glEndList();
 
 	glNewList( Body, GL_COMPILE );
-            if (!loadTGA("textures/lava.tga", 14)) {
+            GLuint id = 20;
+            if (!loadTexture("textures/lava.tga", &id)) {
                 std::cout << "not found\n";
             }
 
             glEnable(GL_TEXTURE_2D);
-            glBindTexture(GL_TEXTURE_2D, 14);
+            glBindTexture(GL_TEXTURE_2D, id);
 
             glBegin( GL_POLYGON );
                 glEdgeFlag( GL_TRUE );

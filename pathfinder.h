@@ -59,4 +59,6 @@ private:
 	int stack_top;
 };
 
+bool loadTexture(char *path, GLuint *texture);
+
 #endif
