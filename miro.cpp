@@ -18,7 +18,8 @@
 
 void display();
 void reviewpoint();
-void RenderString(float x, float y, void *font, const char* string, float r, float g, float b);
+void RenderString(float x, float y, void *font, const unsigned char* msg, float r, float g, float b);
+void display_win();
 
 static Cell *cell;
 static int width, height;	// the size of maze
@@ -64,6 +65,7 @@ void RenderString(float x, float y, void *font, const unsigned char* msg, float 
 
 // remove the line between two connected cells
 void erase_wall( int x, int y, int dest ){
+
 
     glColor3f( 0, 0, 0 );
     glBegin( GL_LINES );
@@ -310,7 +312,6 @@ void display()
     //glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear( GL_COLOR_BUFFER_BIT );
     draw_texture();
-    //RenderString(0.0f, 0.0f, GLUT_BITMAP_TIMES_ROMAN_24, "Hello", 1.0f, 0.0f, 0.0f);
 
     glColor3f( 1-R, 1-G, 1-B );	// the color is the negative of background color
     //glColor3f(1, 1, 0);
@@ -327,7 +328,7 @@ void display()
         glVertex2f( width*10+10.0 , x*10 );
     }
     glEnd();
-
+    
     draw_maze();
 
     if(gb_finder != NULL) {
@@ -338,6 +339,13 @@ void display()
         glTranslatef(gb_finder->CurrentX() + SHIFTFACTOR_X, gb_finder->CurrentY() + SHIFTFACTOR_Y, 0);
         glScalef(0.1, 0.1, 1);
         gb_finder->Draw();
+    }
+
+    glLoadIdentity();
+
+    if (state == 2) {
+        display_win();
+        //RenderString(0.0f, 0.0f, GLUT_BITMAP_TIMES_ROMAN_24, "You Win", 1.0f, 0.0f, 0.0f);
     }
 
     glutSwapBuffers();
@@ -441,19 +449,11 @@ void path_finding()
 
 void display_win()
 {
-    /*glBegin(GL_QUADS);
-        glColor3f(0, 0, 0);
-        glVertex2f(view_Left, view_Bottom);
-
-        glVertex2f(view_Right, view_Bottom);
-
-        glVertex2f(view_Right, view_Up);
-
-        glVertex2d(view_Left, view_Up);
-    glEnd();*/
-    glClearColor(0, 0, 0, 0);
-    //RenderString(0.0f, 0.0f, GLUT_BITMAP_TIMES_ROMAN_24, "Hello", 1.0f, 0.0f, 0.0f);
-    glutSwapBuffers();
+    draw_texture();
+    float x = (view_Right + view_Left) / 2.0 - 7;
+    float y = (view_Up + view_Bottom) / 2.0;
+    
+    RenderString(x, y, GLUT_BITMAP_TIMES_ROMAN_24, "You Win!!!", 1.0f, 0.0f, 0.0f);
 }
 
 void goal_ceremony()
@@ -466,11 +466,15 @@ void goal_ceremony()
 
     oldTime = currTime;
     count++;
+    glLoadIdentity();
+    static int once = 0;
+    if (once >= 0) {
+        //display_win();
+        once++;
+    }
 
-    //display_win();
-
-    if( count > 0) state++;
-    gb_finder->UpdateStatus();
+    if( count > 200) state++;
+    //gb_finder->UpdateStatus();
 }
 
 void specialKeyFunc( int key, int x, int y ){

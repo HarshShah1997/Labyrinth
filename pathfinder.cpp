@@ -47,75 +47,30 @@ PathFinder::PathFinder(int x_position, int y_position, int maze_width, int maze_
 	rolling_status = 0;
 	goal_ceremony_status = 0;
 	degree_7 = sin(7 * atan(-1) / 180);	// sin( 7 * PI / 180)
+        textureId = 20;
+        if (!loadTexture("textures/lava.tga", &textureId)) {
+            std::cout << "not found\n";
+        }
 
 	lists();
 	init_dest = Dest = RIGHT;
 }
 
 void PathFinder::lists(){
-	glNewList( Arm, GL_COMPILE );
-		glBegin( GL_POLYGON );
-			glEdgeFlag( GL_TRUE );
-			glVertex2f( 0, 0 );
-			glVertex2f( 15, -10 );
-			glVertex2f( 25, -25 );
-			//glVertex2f( 0, 0 );
-		glEnd();
-	glEndList();
-
-	glNewList( Leg, GL_COMPILE );
-		glBegin( GL_POLYGON );
-			glEdgeFlag( GL_TRUE );
-			glVertex2f( 0, 0 );
-			glVertex2f( 7, -28.5 );
-			glVertex2f( 0, -28.5 );
-			//glVertex2f( 0, 0 );
-		glEnd();
-	glEndList();
-
-	glNewList( Eye, GL_COMPILE );
-		glColor3f( 1, 1, 1 );
-		glBegin( GL_POLYGON );
-			glEdgeFlag( GL_TRUE );
-			glVertex2f( 0, 0 );
-			glVertex2f( 10, -3 );
-			glVertex2f( 8, -10 );
-			glVertex2f( 2, -9 );
-			//glVertex2f( 0, 0 );
-		glEnd();
-
-		glBegin( GL_POLYGON );
-			glColor3f( 0, 0, 0 );
-			glVertex2f( 6, -1.8 );
-			glVertex2f( 8, -2.4 );
-			glVertex2f( 8, -8 );
-			glVertex2f( 6, -8 );
-			//glVertex2f( 8, -2.4 );
-		glEnd();
-	glEndList();
 
 	glNewList( Body, GL_COMPILE );
-            GLuint id = 20;
-            if (!loadTexture("textures/lava.tga", &id)) {
-                std::cout << "not found\n";
-            }
-
+            
             glEnable(GL_TEXTURE_2D);
-            glBindTexture(GL_TEXTURE_2D, id);
+            glBindTexture(GL_TEXTURE_2D, textureId);
 
             glBegin( GL_POLYGON );
                 glEdgeFlag( GL_TRUE );
-                        //glVertex2f( 0, 0 );
-			//glVertex2f( 40, 0  );
-			//glVertex2f( 40, 40 );
-			//glVertex2f( 0, 40 );
-			//glVertex2f( 0, 0 ); //Do not uncomment this
-                        for (float angle = 0; angle < 2 * M_PI; angle = angle + 0.01) {
-                            glTexCoord2f(0.5 * cos(angle) + 0.5, 0.5 * sin(angle) + 0.5);
-                            glVertex2f(20 * cos(angle) + 20, 20 * sin(angle) + 20);
-                        }
-		glEnd();
-                glDisable(GL_TEXTURE_2D);
+                    for (float angle = 0; angle < 2 * M_PI; angle = angle + 0.01) {
+                        glTexCoord2f(0.5 * cos(angle) + 0.5, 0.5 * sin(angle) + 0.5);
+                        glVertex2f(20 * cos(angle) + 20, 20 * sin(angle) + 20);
+                    }
+	    glEnd();
+            glDisable(GL_TEXTURE_2D);
 	glEndList();
 
 }
@@ -217,14 +172,12 @@ void PathFinder::Draw()
 			break;
 		}
 	}
-        //rotateAngle = 0;
 	glTranslatef(20,15,0);
-	//glRotatef(rotateAngle, 0, 0, 1);
 	glTranslatef(-20, -15, 0);
 	glColor3f( bodyColorR, bodyColorG, bodyColorB );
 	glCallList( Body );
 
-	glPushMatrix();
+	//glPushMatrix();
 
 }
 

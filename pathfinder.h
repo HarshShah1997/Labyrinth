@@ -25,7 +25,7 @@ public:
 
 	double CurrentX() { return current_x; }	// return x position of the finder
 	double CurrentY() { return current_y; }	// return y position of the finder
-	void Set_getgoal() { get_goal = true; }
+	void Set_getgoal() { get_goal = false/*true*/; }
 
 	/* stack of path finding */
 	bool isStack_Empty() { return stack_top == -1; }
@@ -41,6 +41,7 @@ private:
 	int Dest;
 	int init_dest;
 	bool get_goal;
+        GLuint textureId;
 
 	/* animation */
 	void lists();	// call list of the finder
