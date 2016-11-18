@@ -247,7 +247,6 @@ void gen_maze(){
                 break;
         }
     }
-    //std::cout << "-----------" << std::endl;
 }
 
 void reshape( int w, int h ){
@@ -309,7 +308,6 @@ void display()
     double x;
 
     glClearColor( R, G, B, 0.0 );
-    //glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear( GL_COLOR_BUFFER_BIT );
     draw_texture();
 
@@ -345,7 +343,6 @@ void display()
 
     if (state == 2) {
         display_win();
-        //RenderString(0.0f, 0.0f, GLUT_BITMAP_TIMES_ROMAN_24, "You Win", 1.0f, 0.0f, 0.0f);
     }
 
     glutSwapBuffers();
@@ -356,34 +353,6 @@ void keyFunc( unsigned char key, int x, int y ){
     switch (key) {
         case ' ':
             work = !work;
-            break;
-        case '-':
-            if (timefactor < 50) timefactor += 5;	// work faster
-            break;
-        case '+':
-            timefactor -= 5;	// work slower
-            if( timefactor < 0) timefactor = 0;
-            break;
-        case 0x7f:	// initialzing all factors, (delete key)
-            Over_view = false;
-            ViewZoomFactor = 20;
-            ViewChange_x = 0;
-            ViewChange_y = 0;
-            timefactor = INIT_TIMEFACTOR;
-            reviewpoint();
-            display();
-            break;
-        case 'w':
-            if (ViewChange_y < height * 5) ViewChange_y += 5;	// scroll the maze up
-            break;
-        case 'a':
-            if (ViewChange_x > width * -5) ViewChange_x -= 5;	// scroll the maze left
-            break;
-        case 's':
-            if (ViewChange_y > height * -5) ViewChange_y -= 5;	// scroll the maze down
-            break;
-        case 'd':
-            if (ViewChange_x < width * 5) ViewChange_x += 5;	// scroll the maze right
             break;
     }
 }
@@ -412,7 +381,6 @@ void path_finding()
 
     if(x == ::goal_x && y == ::goal_y) {	// if get the goal
         ::state++;
-        gb_finder->Set_getgoal();
         return;
     }
 
@@ -453,7 +421,7 @@ void display_win()
     float x = (view_Right + view_Left) / 2.0 - 7;
     float y = (view_Up + view_Bottom) / 2.0;
     
-    RenderString(x, y, GLUT_BITMAP_TIMES_ROMAN_24, "You Win!!!", 1.0f, 0.0f, 0.0f);
+    RenderString(x, y, GLUT_BITMAP_TIMES_ROMAN_24, "You Win!!!", 153.0/255, 204.0/255, 1.0);
 }
 
 void goal_ceremony()
@@ -467,14 +435,8 @@ void goal_ceremony()
     oldTime = currTime;
     count++;
     glLoadIdentity();
-    static int once = 0;
-    if (once >= 0) {
-        //display_win();
-        once++;
-    }
 
-    if( count > 200) state++;
-    //gb_finder->UpdateStatus();
+    if( count > 100) state++;
 }
 
 void specialKeyFunc( int key, int x, int y ){
@@ -490,23 +452,6 @@ void specialKeyFunc( int key, int x, int y ){
             break;
         case GLUT_KEY_UP:
             userInputLastDirection = up;
-            break;
-        case GLUT_KEY_PAGE_DOWN:
-            if (ViewZoomFactor < ((width>height)? width * 15 : height * 15)) ViewZoomFactor += 5;	// zoom in
-            break;
-        case GLUT_KEY_PAGE_UP:
-            if (ViewZoomFactor > 0) ViewZoomFactor -= 5;	// zoom out
-            break;
-        case GLUT_KEY_INSERT:	// initializing viewing
-            ViewZoomFactor = 20;
-            ViewChange_x = 0;
-            ViewChange_y = 0;
-            break;
-        case GLUT_KEY_HOME:
-            Over_view = true;	// set the whole maze can be seen
-            break;
-        case GLUT_KEY_END:
-            Over_view = false;	// zoomed maze
             break;
     }
 
@@ -534,12 +479,6 @@ void reviewpoint()
         }
     }
 
-    else{
-        view_Left = gb_finder->CurrentX() - (ViewZoomFactor+10)+ ViewChange_x;
-        view_Right = gb_finder->CurrentX() + ViewZoomFactor+ ViewChange_x;
-        view_Bottom = gb_finder->CurrentY() - (ViewZoomFactor+10)+ ViewChange_y;
-        view_Up = gb_finder->CurrentY() + ViewZoomFactor+ ViewChange_y;
-    }
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity ();
 
@@ -574,8 +513,7 @@ int main( int argc, char ** argv ){
     using namespace std;
 
     if (argc > 1) {
-        if (strcmp(argv[1], "--auto") == 0) autoMode = true;
-        else if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
+        if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
             cout << "usage: " << argv[0] << " [--auto]" << endl;
             return 0;
         }
@@ -600,24 +538,10 @@ int main( int argc, char ** argv ){
     /* help message */
     cout << endl;
     cout << "Space bar : start/stop working" << endl;
-    cout << " + key    : increasing speed" << endl;
-    cout << " - key    : decreasing speed" << endl;
-    cout << "w a s d   : scroll the maze" << endl;
     cout << "Arrow key : move the character" << endl;
-    cout << "Page Up   : Zoom in" << endl;
-    cout << "Page Down : Zoom out" << endl;
-    cout << "Home key  : Over view the maze" << endl;
-    cout << "End key   : closed view the maze" << endl;
-    cout << "Insert key: initialize zoom and scroll" << endl;
-    cout << "Del key   : initialize all(zoom, scroll, speed)" << endl;
-    cout << endl << "Check the newly created window!" << endl;
+    cout << endl << "SOLVE THE MAZE!!!" << endl;
 
     cell = new Cell[width * height];
-
-    /* choose background color */
-    //R = ( rand()%256 ) / 255.0;
-    //G = ( rand()%256 ) / 255.0;
-    //B = ( rand()%256 ) / 255.0;
 
     R = 0.0;
     G = 0.0;
@@ -626,14 +550,12 @@ int main( int argc, char ** argv ){
     timefactor = INIT_TIMEFACTOR;
     ViewChange_x = 0;
     ViewChange_y = 0;
-    //ViewZoomFactor = 20;
-    ViewZoomFactor = 50;
 
     glutInit( &argc, argv );
     glutInitDisplayMode( GLUT_DOUBLE | GLUT_RGB );
     glutInitWindowSize ( 700, 700 );
     glutInitWindowPosition (100, 100);
-    glutCreateWindow ("miro");
+    glutCreateWindow ("Maze Runner");
     glutReshapeFunc( reshape );
     glutDisplayFunc( display );
     glutIdleFunc( idle );

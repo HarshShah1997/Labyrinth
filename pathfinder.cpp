@@ -43,8 +43,6 @@ PathFinder::PathFinder(int x_position, int y_position, int maze_width, int maze_
 	/* initialzing status factor */
 	ismoving = false;
 	walk_status = 0;
-	eye_status = 0;
-	rolling_status = 0;
 	goal_ceremony_status = 0;
 	degree_7 = sin(7 * atan(-1) / 180);	// sin( 7 * PI / 180)
         textureId = 20;
@@ -77,24 +75,23 @@ void PathFinder::lists(){
 
 void PathFinder::Move()
 {
-	double movingfactor = 28.5 * fabs(sin(degree_7 * walk_status) - sin(degree_7 * (walk_status - 1)));
-	// length of leg * abs_value( sin(7_deg * walk_status) - sin(7_deg * (walk_status-1)))
+	double movingfactor = 30 * /*28.5 */ fabs(sin(degree_7 * walk_status) - sin(degree_7 * (walk_status - 1)));
 	// movement of one frame of the animation
 
 	if( rolling_status == ROLL_FACT ){
 		switch(Dest) {
 		case UP:
-			current_y += movingfactor;//( walk_status >= 0 )? walk_status/3.0 : -walk_status/3.0;
+			current_y += movingfactor;
 			break;
 		case DOWN:
-			current_y -= movingfactor;//( walk_status >= 0 )? walk_status/3.0 : -walk_status/3.0;
-			break;
+			current_y -= movingfactor;			
+                        break;
 		case LEFT:
-			current_x -= movingfactor;//( walk_status >= 0 )? walk_status/3.0 : -walk_status/3.0;
-			break;
+			current_x -= movingfactor;
+                        break;
 		case RIGHT:
-			current_x += movingfactor;//( walk_status >= 0 )? walk_status/3.0 : -walk_status/3.0;
-			break;
+			current_x += movingfactor;
+                        break;
 		}
 	}
 
@@ -108,15 +105,6 @@ void PathFinder::Move()
 		old_y = current_y;
 		ismoving = false;
 	}
-
-	if(rolling_status == ROLL_FACT) {	// if it is rotating then do not move the leg, arm and eye
-		walk_status++;
-		if( walk_status > 5 )
-			walk_status = -4;
-		eye_status++;
-		if( eye_status >= 30 )
-			eye_status = 0;
-	}
 }
 
 void PathFinder::Draw()
@@ -124,60 +112,11 @@ void PathFinder::Draw()
 	glTranslatef( 30, 50, 0 );
 
 	// draw body
-	double rotateAngle = 0;
-	switch (init_dest) {
-	case LEFT:
-		rotateAngle = 180.0;
-		break;
-	case UP:
-		rotateAngle = 90.0;
-		break;
-	case DOWN:
-		rotateAngle = -90.0;
-		break;
-	}
-	if( rolling_status < ROLL_FACT ){
-		switch (init_dest) {
-		case LEFT:
-			if( Dest == RIGHT )
-				rotateAngle += 180.0/ROLL_FACT*rolling_status;
-			else if( Dest == UP )
-				rotateAngle += -90.0/ROLL_FACT*rolling_status;
-			else if( Dest == DOWN )
-				rotateAngle += 90.0/ROLL_FACT*rolling_status;
-			break;
-		case RIGHT:
-			if( Dest == LEFT )
-				rotateAngle += 180.0/ROLL_FACT*rolling_status;
-			else if( Dest == UP )
-				rotateAngle += 90.0/ROLL_FACT*rolling_status;
-			else if( Dest == DOWN )
-				rotateAngle += -90.0/ROLL_FACT*rolling_status;
-			break;
-		case UP:
-			if( Dest == DOWN )
-				rotateAngle += 180.0/ROLL_FACT*rolling_status;
-			else if( Dest == LEFT )
-				rotateAngle += 90.0/ROLL_FACT*rolling_status;
-			else if( Dest == RIGHT )
-				rotateAngle += -90.0/ROLL_FACT*rolling_status;
-			break;
-		case DOWN:
-			if( Dest == LEFT )
-				rotateAngle += -90.0/ROLL_FACT*rolling_status;
-			else if( Dest == UP )
-				rotateAngle += 180.0/ROLL_FACT*rolling_status;
-			else if( Dest == RIGHT )
-				rotateAngle += 90.0/ROLL_FACT*rolling_status;
-			break;
-		}
-	}
 	glTranslatef(20,15,0);
 	glTranslatef(-20, -15, 0);
 	glColor3f( bodyColorR, bodyColorG, bodyColorB );
 	glCallList( Body );
 
-	//glPushMatrix();
 
 }
 
