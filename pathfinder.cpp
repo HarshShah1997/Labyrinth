@@ -48,7 +48,7 @@ PathFinder::PathFinder(int x_position, int y_position, int maze_width, int maze_
 	goal_ceremony_status = 0;
 	degree_7 = sin(7 * atan(-1) / 180);	// sin( 7 * PI / 180)
         textureId = 20;
-        if (!loadTexture("textures/lava.tga", &textureId)) {
+        if (!loadTexture("textures/Earth.png", &textureId)) {
             std::cout << "not found\n";
         }
 
