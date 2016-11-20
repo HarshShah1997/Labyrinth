@@ -6,7 +6,7 @@ LDFLAGS = -lGL -lGLU -lglut -lSOIL
 miro : $(OBJ)
 	$(CC) -o miro $(OBJ) $(LDFLAGS)
 
-miro.o : miro.cpp miro.h 
+miro.o : miro.cpp 
 	$(CC) -c -g -fpermissive miro.cpp
 
 clean :

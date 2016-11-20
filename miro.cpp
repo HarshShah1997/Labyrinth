@@ -10,134 +10,147 @@
 #include <cstring>
 #include <SOIL.h>
 
-#include "miro.h"
-//#include "pathfinder.h"
+//#include "miro.h"
+#define	up	0
+#define	down	1
+#define right	2
+#define left	3
 
-bool loadTexture(char *path, GLuint *texture){
-    *texture = SOIL_load_OGL_texture(path,
-            SOIL_LOAD_AUTO,
-            SOIL_CREATE_NEW_ID,
-            SOIL_FLAG_NTSC_SAFE_RGB | SOIL_FLAG_MULTIPLY_ALPHA
-            );
-    if(*texture == 0){
-        return false;
-    } else {
-        return true;
-    }
-}
+class Cell {
+    public:
+	bool is_open;	// has this cell visited for making maze
+	bool road[4];	// is each four directions of cells(up, down, right, left) connected to this cell
 
+	Cell() {
+		is_open = false;
+		road[0] = false;
+		road[1] = false;
+		road[2] = false;
+		road[3] = false;
+	}
+}; 
 
 class PathFinder {
-private:
-	/* position and direction for path finding */
-	double current_x;
-	double current_y;
-	double old_x;
-	double old_y;
-	int Dest;
-	int init_dest;
+    private:
+        double current_x;
+        double current_y;
+        double old_x;
+        double old_y;
+        int Dest;
+        int init_dest;
         int walk_status;
         GLuint textureId;
 
-	bool ismoving;
-	double degree_7;	// a degree of 7, used calculating movement of one frame of animation
-	double bodyColorR;
-	double bodyColorG;
-	double bodyColorB;
+        bool ismoving;
+        double degree_7;	
+        double bodyColorR;
+        double bodyColorG;
+        double bodyColorB;
 
 
-public:
-	enum Direction { UP = 0, DOWN = 1, RIGHT = 2, LEFT = 3 };
+    public:
+        enum Direction { UP = 0, DOWN = 1, RIGHT = 2, LEFT = 3 };
 
-	void SetBodyColor(double r, double g, double b)	{ bodyColorR = r; bodyColorG = g, bodyColorB = b; }
+        void SetBodyColor(double r, double g, double b)	{ bodyColorR = r; bodyColorG = g, bodyColorB = b; }
 
-	double CurrentX() { return current_x; }	// return x position of the finder
-	double CurrentY() { return current_y; }	// return y position of the finder
+        double CurrentX() { return current_x; }	// return x position of the finder
+        double CurrentY() { return current_y; }	// return y position of the finder
         bool isMoving() { return ismoving; } 
 
+        bool loadTexture(char *path, GLuint *texture){
+            *texture = SOIL_load_OGL_texture(path,
+                    SOIL_LOAD_AUTO,
+                    SOIL_CREATE_NEW_ID,
+                    SOIL_FLAG_NTSC_SAFE_RGB | SOIL_FLAG_MULTIPLY_ALPHA
+                    );
+            if(*texture == 0){
+                return false;
+            } else {
+                return true;
+            }
+        }
 
-void set_dest( Direction new_dest ){
-    this->init_dest = Dest;
-    this->Dest = new_dest;
-    ismoving = true;
-}
+        void set_dest( Direction new_dest ){
+            this->init_dest = Dest;
+            this->Dest = new_dest;
+            ismoving = true;
+        }
 
-PathFinder(int x_position, int y_position, int maze_width, int maze_height)
-{
-    old_x = current_x = 20.0 + 10.0 * x_position;
-    old_y = current_y = 20.0 + 10.0 * y_position;
+        PathFinder(int x_position, int y_position, int maze_width, int maze_height)
+        {
+            old_x = current_x = 20.0 + 10.0 * x_position;
+            old_y = current_y = 20.0 + 10.0 * y_position;
 
-    /* initialzing status factor */
-    ismoving = false;
+            /* initialzing status factor */
+            ismoving = false;
 
-    degree_7 = sin(7 * atan(-1) / 180);	// sin( 7 * PI / 180)
-    textureId = 20;
-    if (!loadTexture("textures/Earth.png", &textureId)) {
-        std::cout << "not found" << std::endl;
-    }
+            degree_7 = sin(7 * atan(-1) / 180);	// sin( 7 * PI / 180)
+            textureId = 20;
+            if (!loadTexture("textures/Earth.png", &textureId)) {
+                std::cout << "not found" << std::endl;
+            }
 
-    init_dest = Dest = RIGHT;
-}
+            init_dest = Dest = RIGHT;
+        }
 
-void Move()
-{
-    double movingfactor = 20 * fabs(sin(degree_7 * walk_status) - sin(degree_7 * (walk_status - 1)));
-    // movement of one frame of the animation
+        void Move()
+        {
+            double movingfactor = 20 * fabs(sin(degree_7 * walk_status) - sin(degree_7 * (walk_status - 1)));
+            // movement of one frame of the animation
 
-    switch(Dest) {
-        case UP:
-            current_y += movingfactor;
-            break;
-        case DOWN:
-            current_y -= movingfactor;			
-            break;
-        case LEFT:
-            current_x -= movingfactor;
-            break;
-        case RIGHT:
-            current_x += movingfactor;
-            break;
-    }
+            switch(Dest) {
+                case UP:
+                    current_y += movingfactor;
+                    break;
+                case DOWN:
+                    current_y -= movingfactor;			
+                    break;
+                case LEFT:
+                    current_x -= movingfactor;
+                    break;
+                case RIGHT:
+                    current_x += movingfactor;
+                    break;
+            }
 
-    if (abs(old_x - current_x) >= 10.0) {
-        current_x = old_x + ((Dest == RIGHT) ? 10 : -10);
-        old_x = current_x;
-        ismoving = false;
-    } else if (abs(old_y - current_y) >= 10.0) {
-        current_y = old_y + ((Dest == UP) ? 10 : -10);
-        old_y = current_y;
-        ismoving = false;
-    }
-}
+            if (abs(old_x - current_x) >= 10.0) {
+                current_x = old_x + ((Dest == RIGHT) ? 10 : -10);
+                old_x = current_x;
+                ismoving = false;
+            } else if (abs(old_y - current_y) >= 10.0) {
+                current_y = old_y + ((Dest == UP) ? 10 : -10);
+                old_y = current_y;
+                ismoving = false;
+            }
+        }
 
-void Draw()
-{
-    glTranslatef( 30, 50, 0 );
+        void Draw()
+        {
+            glTranslatef( 30, 50, 0 );
 
-    // draw body
-    glTranslatef(20,15,0);
-    glTranslatef(-20, -15, 0);
-    glColor3f( bodyColorR, bodyColorG, bodyColorB );
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, textureId);
+            // draw body
+            glTranslatef(20,15,0);
+            glTranslatef(-20, -15, 0);
+            glColor3f( bodyColorR, bodyColorG, bodyColorB );
+            glEnable(GL_TEXTURE_2D);
+            glBindTexture(GL_TEXTURE_2D, textureId);
 
-    glBegin( GL_POLYGON );
-    glEdgeFlag( GL_TRUE );
-    for (float angle = 0; angle < 2 * M_PI; angle = angle + 0.01) {
-        glTexCoord2f(0.5 * cos(angle) + 0.5, 0.5 * sin(angle) + 0.5);
-        glVertex2f(20 * cos(angle) + 20, 20 * sin(angle) + 20);
-    }
-    glEnd();
-    glDisable(GL_TEXTURE_2D);
+            glBegin( GL_POLYGON );
+            glEdgeFlag( GL_TRUE );
+            for (float angle = 0; angle < 2 * M_PI; angle = angle + 0.01) {
+                glTexCoord2f(0.5 * cos(angle) + 0.5, 0.5 * sin(angle) + 0.5);
+                glVertex2f(20 * cos(angle) + 20, 20 * sin(angle) + 20);
+            }
+            glEnd();
+            glDisable(GL_TEXTURE_2D);
 
-}
+        }
 
-void UpdateStatus() {
-    if (ismoving) Move();
-}
+        void UpdateStatus() {
+            if (ismoving) Move();
+        }
 
 };
-
 
 void display();
 void reviewpoint();
@@ -145,9 +158,7 @@ void RenderString(float x, float y, void *font, const unsigned char* msg, float 
 void display_win();
 
 static int view_Left, view_Right, view_Bottom, view_Up;	//view points
-static int ViewZoomFactor;
 static int ViewChange_x, ViewChange_y;
-static int timefactor;		// controls duration
 
 static Cell *cell;
 static int width, height;	// the size of maze
@@ -158,7 +169,6 @@ static int *chosen;		// the pointer of array of connected cells
 static bool work;			// making maze(true) or pause(false)
 static int state = 0;		// current state(making maze, finding path or end)
 static PathFinder* gb_finder = NULL;	// path finder object
-static bool Over_view = true;
 static int userInputLastDirection = -1;
 
 static inline Cell & cellXY(int x, int y) {
@@ -230,11 +240,11 @@ void choose_starting()
     int x, y;
     int dest = rand()%2 + 1;
     if( dest == down ){
-        
+
         starting_x = x = rand()%width;
         starting_y = y = height - 1;
         cellXY(x, y).road[up] = true;
-        
+
         goal_x = x = rand()%width;
         goal_y = y = 0;
         cellXY(x, y).road[down] = true;
@@ -379,23 +389,23 @@ void init() {
 void draw_texture()
 {
     GLuint id = 13;
-    if (!loadTexture("textures/celestial002.png", &id)) {
+    if (!gb_finder -> loadTexture("textures/celestial002.png", &id)) {
         std::cout << "Texture not found\n";
     }
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, id);
     glBegin(GL_QUADS);
-        glTexCoord2f(0, 0);
-        glVertex2f(view_Left, view_Bottom);
+    glTexCoord2f(0, 0);
+    glVertex2f(view_Left, view_Bottom);
 
-        glTexCoord2f(1, 0);
-        glVertex2f(view_Right, view_Bottom);
+    glTexCoord2f(1, 0);
+    glVertex2f(view_Right, view_Bottom);
 
-        glTexCoord2f(1, 1);
-        glVertex2f(view_Right, view_Up);
+    glTexCoord2f(1, 1);
+    glVertex2f(view_Right, view_Up);
 
-        glTexCoord2f(0, 1);
-        glVertex2d(view_Left, view_Up);
+    glTexCoord2f(0, 1);
+    glVertex2d(view_Left, view_Up);
     glEnd();
     glDisable(GL_TEXTURE_2D);
 }
@@ -423,7 +433,7 @@ void display()
         glVertex2f( width*10+10.0 , x*10 );
     }
     glEnd();
-    
+
     draw_maze();
 
     if(gb_finder != NULL) {
@@ -511,7 +521,7 @@ void display_win()
     draw_texture();
     float x = (view_Right + view_Left) / 2.0 - 7;
     float y = (view_Up + view_Bottom) / 2.0;
-    
+
     RenderString(x, y, GLUT_BITMAP_TIMES_ROMAN_24, "You Win!!!", 153.0/255, 204.0/255, 1.0);
 }
 
@@ -591,7 +601,7 @@ int main( int argc, char ** argv ){
     G = 0.0;
     B = 0.0;
 
-    timefactor = INIT_TIMEFACTOR;
+    //timefactor = INIT_TIMEFACTOR;
     ViewChange_x = 0;
     ViewChange_y = 0;
 
