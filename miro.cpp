@@ -1,25 +1,153 @@
-#ifdef __APPLE__
-#include <OpenGL/gl.h>
-#include <GLUT/glut.h>
-#else
 #include <GL/gl.h>
 #include <GL/glut.h>
 #include <GL/freeglut.h>
-#endif
 
 #include <iostream>
+#include <cmath>
+#include <cstdlib>
 #include <ctime>
 #include <sys/time.h>
 #include <cstring>
 #include <SOIL.h>
 
 #include "miro.h"
-#include "pathfinder.h"
+//#include "pathfinder.h"
+
+bool loadTexture(char *path, GLuint *texture){
+    *texture = SOIL_load_OGL_texture(path,
+            SOIL_LOAD_AUTO,
+            SOIL_CREATE_NEW_ID,
+            SOIL_FLAG_NTSC_SAFE_RGB | SOIL_FLAG_MULTIPLY_ALPHA
+            );
+    if(*texture == 0){
+        return false;
+    } else {
+        return true;
+    }
+}
+
+
+class PathFinder {
+private:
+	/* position and direction for path finding */
+	double current_x;
+	double current_y;
+	double old_x;
+	double old_y;
+	int Dest;
+	int init_dest;
+        int walk_status;
+        GLuint textureId;
+
+	bool ismoving;
+	double degree_7;	// a degree of 7, used calculating movement of one frame of animation
+	double bodyColorR;
+	double bodyColorG;
+	double bodyColorB;
+
+
+public:
+	enum Direction { UP = 0, DOWN = 1, RIGHT = 2, LEFT = 3 };
+
+	void SetBodyColor(double r, double g, double b)	{ bodyColorR = r; bodyColorG = g, bodyColorB = b; }
+
+	double CurrentX() { return current_x; }	// return x position of the finder
+	double CurrentY() { return current_y; }	// return y position of the finder
+        bool isMoving() { return ismoving; } 
+
+
+void set_dest( Direction new_dest ){
+    this->init_dest = Dest;
+    this->Dest = new_dest;
+    ismoving = true;
+}
+
+PathFinder(int x_position, int y_position, int maze_width, int maze_height)
+{
+    old_x = current_x = 20.0 + 10.0 * x_position;
+    old_y = current_y = 20.0 + 10.0 * y_position;
+
+    /* initialzing status factor */
+    ismoving = false;
+
+    degree_7 = sin(7 * atan(-1) / 180);	// sin( 7 * PI / 180)
+    textureId = 20;
+    if (!loadTexture("textures/Earth.png", &textureId)) {
+        std::cout << "not found" << std::endl;
+    }
+
+    init_dest = Dest = RIGHT;
+}
+
+void Move()
+{
+    double movingfactor = 20 * fabs(sin(degree_7 * walk_status) - sin(degree_7 * (walk_status - 1)));
+    // movement of one frame of the animation
+
+    switch(Dest) {
+        case UP:
+            current_y += movingfactor;
+            break;
+        case DOWN:
+            current_y -= movingfactor;			
+            break;
+        case LEFT:
+            current_x -= movingfactor;
+            break;
+        case RIGHT:
+            current_x += movingfactor;
+            break;
+    }
+
+    if (abs(old_x - current_x) >= 10.0) {
+        current_x = old_x + ((Dest == RIGHT) ? 10 : -10);
+        old_x = current_x;
+        ismoving = false;
+    } else if (abs(old_y - current_y) >= 10.0) {
+        current_y = old_y + ((Dest == UP) ? 10 : -10);
+        old_y = current_y;
+        ismoving = false;
+    }
+}
+
+void Draw()
+{
+    glTranslatef( 30, 50, 0 );
+
+    // draw body
+    glTranslatef(20,15,0);
+    glTranslatef(-20, -15, 0);
+    glColor3f( bodyColorR, bodyColorG, bodyColorB );
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, textureId);
+
+    glBegin( GL_POLYGON );
+    glEdgeFlag( GL_TRUE );
+    for (float angle = 0; angle < 2 * M_PI; angle = angle + 0.01) {
+        glTexCoord2f(0.5 * cos(angle) + 0.5, 0.5 * sin(angle) + 0.5);
+        glVertex2f(20 * cos(angle) + 20, 20 * sin(angle) + 20);
+    }
+    glEnd();
+    glDisable(GL_TEXTURE_2D);
+
+}
+
+void UpdateStatus() {
+    if (ismoving) Move();
+}
+
+};
+
 
 void display();
 void reviewpoint();
 void RenderString(float x, float y, void *font, const unsigned char* msg, float r, float g, float b);
 void display_win();
+
+static int view_Left, view_Right, view_Bottom, view_Up;	//view points
+static int ViewZoomFactor;
+static int ViewChange_x, ViewChange_y;
+static int timefactor;		// controls duration
 
 static Cell *cell;
 static int width, height;	// the size of maze
@@ -30,28 +158,13 @@ static int *chosen;		// the pointer of array of connected cells
 static bool work;			// making maze(true) or pause(false)
 static int state = 0;		// current state(making maze, finding path or end)
 static PathFinder* gb_finder = NULL;	// path finder object
-static bool Over_view = true/*false*/;
-static bool autoMode = false;
+static bool Over_view = true;
 static int userInputLastDirection = -1;
-
-static int view_Left, view_Right, view_Bottom, view_Up;	//view points
-static int ViewZoomFactor;
-static int ViewChange_x, ViewChange_y;
-static int timefactor;		// controls duration
-
-static int timeGetTime() {
-    static time_t init_sec = 0;
-    timeval tv;
-    gettimeofday(&tv, NULL);
-    if (init_sec == 0) {
-        init_sec = tv.tv_sec;
-    }
-    return (tv.tv_sec - init_sec) * 1000 + tv.tv_usec / 1000;
-}
 
 static inline Cell & cellXY(int x, int y) {
     return cell[y * width + x];
 }
+
 
 void RenderString(float x, float y, void *font, const unsigned char* msg, float r, float g, float b)
 {  
@@ -96,7 +209,7 @@ void erase_wall( int x, int y, int dest ){
     glEnd();
 }
 
-void draw_maze(){
+void draw_maze() {
 
     int i;
     int x, y;
@@ -112,15 +225,44 @@ void draw_maze(){
     }
 }
 
+void choose_starting()
+{
+    int x, y;
+    int dest = rand()%2 + 1;
+    if( dest == down ){
+        
+        starting_x = x = rand()%width;
+        starting_y = y = height - 1;
+        cellXY(x, y).road[up] = true;
+        
+        goal_x = x = rand()%width;
+        goal_y = y = 0;
+        cellXY(x, y).road[down] = true;
+    } else {
+        starting_x = x = width - 1;
+        starting_y = y = rand()%height;
+        cellXY(x, y).road[right] = true;
+
+        goal_x = x = 0;
+        goal_y = y = rand()%height;
+        cellXY(x, y).road[left] = true;
+    }
+    chosen = new int [height * width];
+
+    // choose the first cell randomly
+    x = rand()%width;
+    y = rand()%height;
+    cellXY(x, y).is_open = true;
+    chosen[0] = width*y + x;	
+}
+
 // generate the maze
 void gen_maze(){
 
     int x, y;	// position of the current cell
     int dest;	// direction of to be connected cell
-    static int length = 0;	// size of the array chosen(store the visited(connected) cells)
+    static int length = 0;	
     int tmp;
-    int currTime;
-    static int oldTime = 0;
 
     //if( work == false ) return;
     if( length == width * height) {
@@ -130,59 +272,20 @@ void gen_maze(){
         return;
     }
 
-    // time
-    currTime = timeGetTime();
-    if(currTime - oldTime > timefactor*1)
-        oldTime = currTime;
-    else return;
-
 
     if( length == 0 ){
-        // make start point and goal
-        dest = rand()%2 + 1;
-        if( dest == down ){
-            // starting point
-            starting_x = x = rand()%width;
-            starting_y = y = height - 1;
-            cellXY(x, y).road[up] = true;
-            // goal
-            goal_x = x = rand()%width;
-            goal_y = y = 0;
-            cellXY(x, y).road[down] = true;
-        }
-        else{
-            // starting point
-            starting_x = x = width - 1;
-            starting_y = y = rand()%height;
-            cellXY(x, y).road[right] = true;
-            // goal
-            goal_x = x = 0;
-            goal_y = y = rand()%height;
-            cellXY(x, y).road[left] = true;
-        }
-        chosen = new int [height * width];
-
-        // choose the first cell randomly
-        x = rand()%width;
-        y = rand()%height;
-        cellXY(x, y).is_open = true;
-        chosen[0] = width*y + x;	// store the first visited cell
-
+        choose_starting();
         length = 1;
     }
 
     bool cellOpen = false;
     int counter = 0;
     while (!cellOpen) {
-        tmp = chosen[ rand()%length ];	// randomly choose a cell which is visited
+        tmp = chosen[ rand()%length ];	
         x = tmp % width;
         y = tmp / width;
 
-        dest = rand()%4;	// choose a direction to connect a nearby cell
-        // if the cell on the direction has visited or is out of range
-        // then select a cell and a directon again
-        // if not, connect two cells and store the new cell(the cell on the direction)
-        // to the array chosen(visited cells)
+        dest = rand()%4;	
         counter++;
         switch( dest ){
 
@@ -235,7 +338,6 @@ void gen_maze(){
                 if( x == 0 || cellXY(x - 1,  y).is_open == true )
                     continue;
 
-                //std::cout << counter << " " << length  << " " << x << "," << y  << " -> " << x-1 << "," << y << std::endl;
                 cellXY(x - 1,  y).is_open = true;
 
                 cellXY(x - 1,  y).road[ right ] = true;
@@ -249,27 +351,23 @@ void gen_maze(){
     }
 }
 
-void reshape( int w, int h ){
+void init() {
     int size = ( width > height )? width : height;
     double move = ( width > height )? ( width-height )/2.0 : ( height-width )/2.0;
 
-    glViewport(0, 0, w, h);
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity ();
 
-    if( state == 0 ){
-        if( width == size ){
-            view_Left = 0.0;
-            view_Right = 20 + size*10;
-            view_Bottom = 0.0 - move*10;
-            view_Up = size*10 + 20 - move*10;
-        }
-        else{
-            view_Left = 0.0 - move*10;
-            view_Right = 20 + size*10 - move*10;
-            view_Bottom = 0.0;
-            view_Up = size*10 + 20;
-        }
+    if( width == size ){
+        view_Left = 0.0;
+        view_Right = 20 + size*10;
+        view_Bottom = 0.0 - move*10;
+        view_Up = size*10 + 20 - move*10;
+    }  else {
+        view_Left = 0.0 - move*10;
+        view_Right = 20 + size*10 - move*10;
+        view_Bottom = 0.0;
+        view_Up = size*10 + 20;
     }
 
     gluOrtho2D( view_Left, view_Right, view_Bottom, view_Up );
@@ -311,8 +409,7 @@ void display()
     glClear( GL_COLOR_BUFFER_BIT );
     draw_texture();
 
-    glColor3f( 1-R, 1-G, 1-B );	// the color is the negative of background color
-    //glColor3f(1, 1, 0);
+    glColor3f( 1.0, 1.0, 1.0 );	
 
     // draw default(unmaden) maze
     glLoadIdentity();
@@ -351,7 +448,7 @@ void display()
 // the space bar toggles making maze or pause
 void keyFunc( unsigned char key, int x, int y ){
     switch (key) {
-        case ' ':
+        case 13:
             work = !work;
             break;
     }
@@ -359,19 +456,13 @@ void keyFunc( unsigned char key, int x, int y ){
 
 void path_finding()
 {
-    static int oldTime;
-    int currTime = timeGetTime();
     static PathFinder finder(::starting_x, ::starting_y, ::width, ::height);
     static int x = ::starting_x;
     static int y = ::starting_y;
 
-    if(currTime - oldTime > timefactor)
-        oldTime = currTime;
-    else return;
-
     if (gb_finder == NULL) {
         gb_finder = &finder;	// to use in other functions
-        finder.SetBodyColor(1.0-R, 1.0-G, 1.0-B);
+        finder.SetBodyColor(1.0, 1.0, 1.0);
     }
 
     finder.UpdateStatus();
@@ -387,25 +478,25 @@ void path_finding()
     if (userInputLastDirection > -1) {
         switch (userInputLastDirection) {
             case up:
-                if(cellXY(x, y).road[up] == true && y < ::height-1 /*&& cellXY(x, y+1).is_open == false*/) {
+                if(cellXY(x, y).road[up] == true && y < ::height-1 ) {
                     finder.set_dest(PathFinder::UP);
                     y++;
                 }
                 break;
             case down:
-                if(cellXY(x,  y).road[down] == true && y > 0 /*&& cellXY(x, y-1).is_open == false*/) {
+                if(cellXY(x,  y).road[down] == true && y > 0 ) {
                     finder.set_dest(PathFinder::DOWN);
                     y--;
                 }
                 break;
             case right:
-                if(cellXY(x, y).road[right] == true && x < ::width-1 /*&& cellXY(x+1, y).is_open == false*/) {
+                if(cellXY(x, y).road[right] == true && x < ::width-1 ) {
                     finder.set_dest(PathFinder::RIGHT);
                     x++;
                 }
                 break;
             case left:
-                if(cellXY(x, y).road[left] == true && x > 0 /*&& cellXY(x-1, y).is_open == false*/) {
+                if(cellXY(x, y).road[left] == true && x > 0 ) {
                     finder.set_dest(PathFinder::LEFT);
                     x--;
                 }
@@ -427,12 +518,6 @@ void display_win()
 void goal_ceremony()
 {
     static int count = 0;
-    static int oldTime = 0;
-    int currTime = timeGetTime();
-
-    if(currTime - oldTime < timefactor * 0.2) return;
-
-    oldTime = currTime;
     count++;
     glLoadIdentity();
 
@@ -455,37 +540,7 @@ void specialKeyFunc( int key, int x, int y ){
             break;
     }
 
-    reviewpoint();
     display();
-}
-
-void reviewpoint()
-{
-    if(gb_finder == NULL) return;	// if finder does not exist
-
-    if( Over_view == true ){
-        double move = (width-height)/2.0;
-        if( width >= height ){
-            view_Left = 0.0;
-            view_Right = 20 + width*10;
-            view_Bottom = 0.0 - move*10;
-            view_Up = width*10 + 20 - move*10;
-        }
-        else{
-            view_Left = 0.0 + move*10;
-            view_Right = 20 + height*10 + move*10;
-            view_Bottom = 0.0;
-            view_Up = height*10 + 20;
-        }
-    }
-
-    glMatrixMode (GL_PROJECTION);
-    glLoadIdentity ();
-
-    gluOrtho2D( view_Left, view_Right, view_Bottom, view_Up );
-
-    glMatrixMode (GL_MODELVIEW);
-    glLoadIdentity();
 }
 
 void idle()
@@ -497,7 +552,6 @@ void idle()
             break;
         case 1:
             path_finding();
-            reviewpoint();
             break;
         case 2:
             goal_ceremony();
@@ -512,32 +566,22 @@ void idle()
 int main( int argc, char ** argv ){
     using namespace std;
 
-    if (argc > 1) {
-        if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
-            cout << "usage: " << argv[0] << " [--auto]" << endl;
-            return 0;
-        }
-    }
-
     srand( ( unsigned )time( NULL ) );
 
     /* input the size of the maze */
     while(1) {
-        cout<<"please input the size of maze( width, 5 ~ 50 )"<<endl;
-        cin>>width;
-        if( width > 50 || width < 5 )	cout<<"out of range!"<<endl;
-        else break;
-    }
-    while(1) {
-        cout<<"please input the size of maze( height, 5 ~ 50 )"<<endl;
-        cin>>height;
-        if( height > 50 || height < 5 )	cout<<"out of range!"<<endl;
-        else break;
+        cout<<"Input width, height (From 5 to 30)"<<endl;
+        cin >> width >> height;
+        if( width > 30 || width < 5 || height > 30 || height < 5) {
+            cout << "out of range!" << endl;
+        } else {
+            break;
+        }
     }
 
     /* help message */
     cout << endl;
-    cout << "Space bar : start/stop working" << endl;
+    cout << "Enter key : start/stop working" << endl;
     cout << "Arrow key : move the character" << endl;
     cout << endl << "SOLVE THE MAZE!!!" << endl;
 
@@ -555,8 +599,10 @@ int main( int argc, char ** argv ){
     glutInitDisplayMode( GLUT_DOUBLE | GLUT_RGB );
     glutInitWindowSize ( 700, 700 );
     glutInitWindowPosition (100, 100);
-    glutCreateWindow ("Maze Runner");
-    glutReshapeFunc( reshape );
+    glutCreateWindow ("Labyrinth");
+
+    init();
+
     glutDisplayFunc( display );
     glutIdleFunc( idle );
     glutSpecialFunc( specialKeyFunc );
