@@ -10,27 +10,27 @@
 #include <cstring>
 #include <SOIL.h>
 
-//#include "miro.h"
-#define	up	0
-#define	down	1
-#define right	2
-#define left	3
+#define	UP	0
+#define	DOWN	1
+#define RIGHT	2
+#define LEFT	3
 
-class Cell {
+using namespace std;
+class GridBox {
     public:
-	bool is_open;	// has this cell visited for making maze
-	bool road[4];	// is each four directions of cells(up, down, right, left) connected to this cell
+        bool isVisited;	
+        bool pathWay[4];	
 
-	Cell() {
-		is_open = false;
-		road[0] = false;
-		road[1] = false;
-		road[2] = false;
-		road[3] = false;
-	}
+        GridBox() {
+            isVisited = false;
+
+            for (int i = 0; i < 4; i++) {
+                pathWay[i] = false;
+            }
+        }
 }; 
 
-class PathFinder {
+class Ball {
     private:
         double current_x;
         double current_y;
@@ -49,13 +49,16 @@ class PathFinder {
 
 
     public:
-        enum Direction { UP = 0, DOWN = 1, RIGHT = 2, LEFT = 3 };
 
-        void SetBodyColor(double r, double g, double b)	{ bodyColorR = r; bodyColorG = g, bodyColorB = b; }
-
-        double CurrentX() { return current_x; }	// return x position of the finder
-        double CurrentY() { return current_y; }	// return y position of the finder
-        bool isMoving() { return ismoving; } 
+        double CurrentX() { 
+            return current_x; 
+        }	
+        double CurrentY() { 
+            return current_y;
+        }	
+        bool isMoving() {
+            return ismoving; 
+        } 
 
         bool loadTexture(char *path, GLuint *texture){
             *texture = SOIL_load_OGL_texture(path,
@@ -70,24 +73,27 @@ class PathFinder {
             }
         }
 
-        void set_dest( Direction new_dest ){
+        void set_dest( int new_dest ){
             this->init_dest = Dest;
             this->Dest = new_dest;
             ismoving = true;
         }
 
-        PathFinder(int x_position, int y_position, int maze_width, int maze_height)
+        Ball(int x_position, int y_position, int maze_width, int maze_height)
         {
+            bodyColorR = 1.0;
+            bodyColorG = 1.0;
+            bodyColorB = 1.0;
             old_x = current_x = 20.0 + 10.0 * x_position;
             old_y = current_y = 20.0 + 10.0 * y_position;
 
             /* initialzing status factor */
             ismoving = false;
 
-            degree_7 = sin(7 * atan(-1) / 180);	// sin( 7 * PI / 180)
+            degree_7 = sin(7 * atan(-1) / 180);
             textureId = 20;
             if (!loadTexture("textures/Earth.png", &textureId)) {
-                std::cout << "not found" << std::endl;
+                cout << "not found" << endl;
             }
 
             init_dest = Dest = RIGHT;
@@ -128,7 +134,6 @@ class PathFinder {
         {
             glTranslatef( 30, 50, 0 );
 
-            // draw body
             glTranslatef(20,15,0);
             glTranslatef(-20, -15, 0);
             glColor3f( bodyColorR, bodyColorG, bodyColorB );
@@ -157,21 +162,21 @@ void reviewpoint();
 void RenderString(float x, float y, void *font, const unsigned char* msg, float r, float g, float b);
 void display_win();
 
-static int view_Left, view_Right, view_Bottom, view_Up;	//view points
-static int ViewChange_x, ViewChange_y;
+int view_Left, view_Right, view_Bottom, view_Up;	
+int ViewChange_x, ViewChange_y;
 
-static Cell *cell;
-static int width, height;	// the size of maze
-static int starting_x, starting_y;	// starting position
-static int goal_x, goal_y;	// position of goal
-static double R, G, B;		// the color of background
-static int *chosen;		// the pointer of array of connected cells
-static bool work;			// making maze(true) or pause(false)
-static int state = 0;		// current state(making maze, finding path or end)
-static PathFinder* gb_finder = NULL;	// path finder object
+GridBox *cell;
+int width, height;	
+int init_x, init_y;
+int goal_x, goal_y;	
+double R, G, B;		
+int *chosen;	
+bool work;		
+int state = 0;		
+Ball* ball = NULL;
 static int userInputLastDirection = -1;
 
-static inline Cell & cellXY(int x, int y) {
+static GridBox & cellXY(int x, int y) {
     return cell[y * width + x];
 }
 
@@ -186,7 +191,6 @@ void RenderString(float x, float y, void *font, const unsigned char* msg, float 
     glutBitmapString(font, msg);
 }
 
-// remove the line between two connected cells
 void erase_wall( int x, int y, int dest ){
 
 
@@ -195,22 +199,22 @@ void erase_wall( int x, int y, int dest ){
 
     switch( dest ){
 
-        case up:
+        case UP:
             glVertex2f( (x+1)*10+0.02, (y+2)*10 );
             glVertex2f( (x+2)*10-0.02, (y+2)*10 );
             break;
 
-        case down:
+        case DOWN:
             glVertex2f( (x+1)*10+0.02, (y+1)*10 );
             glVertex2f( (x+2)*10-0.02, (y+1)*10 );
             break;
 
-        case right:
+        case RIGHT:
             glVertex2f( (x+2)*10, (y+1)*10+0.02 );
             glVertex2f( (x+2)*10, (y+2)*10-0.02 );
             break;
 
-        case left:
+        case LEFT:
             glVertex2f( (x+1)*10, (y+1)*10+0.02 );
             glVertex2f( (x+1)*10, (y+2)*10-0.02 );
             break;
@@ -228,10 +232,18 @@ void draw_maze() {
         x = i % width;
         y = i / width;
 
-        if( cell[i].road[right] == true )	erase_wall( x, y, right );
-        if( cell[i].road[up] ==true )		erase_wall( x, y, up );
-        if( cell[i].road[down] == true )	erase_wall( x, y, down );
-        if( cell[i].road[left] ==true )		erase_wall( x, y, left );
+        if (cell[i].pathWay[RIGHT] == true) {
+            erase_wall( x, y, RIGHT );
+        }
+        if (cell[i].pathWay[UP] == true) {
+            erase_wall( x, y, UP );
+        }
+        if (cell[i].pathWay[DOWN] == true) {
+            erase_wall( x, y, DOWN );
+        }
+        if (cell[i].pathWay[LEFT] == true) {
+            erase_wall( x, y, LEFT );
+        }
     }
 }
 
@@ -239,34 +251,32 @@ void choose_starting()
 {
     int x, y;
     int dest = rand()%2 + 1;
-    if( dest == down ){
+    if( dest == DOWN ){
 
-        starting_x = x = rand()%width;
-        starting_y = y = height - 1;
-        cellXY(x, y).road[up] = true;
+        init_x = x = rand()%width;
+        init_y = y = height - 1;
+        cellXY(x, y).pathWay[UP] = true;
 
         goal_x = x = rand()%width;
         goal_y = y = 0;
-        cellXY(x, y).road[down] = true;
+        cellXY(x, y).pathWay[DOWN] = true;
     } else {
-        starting_x = x = width - 1;
-        starting_y = y = rand()%height;
-        cellXY(x, y).road[right] = true;
+        init_x = x = width - 1;
+        init_y = y = rand()%height;
+        cellXY(x, y).pathWay[RIGHT] = true;
 
         goal_x = x = 0;
         goal_y = y = rand()%height;
-        cellXY(x, y).road[left] = true;
+        cellXY(x, y).pathWay[LEFT] = true;
     }
     chosen = new int [height * width];
 
-    // choose the first cell randomly
     x = rand()%width;
     y = rand()%height;
-    cellXY(x, y).is_open = true;
+    cellXY(x, y).isVisited = true;
     chosen[0] = width*y + x;	
 }
 
-// generate the maze
 void gen_maze(){
 
     int x, y;	// position of the current cell
@@ -274,11 +284,10 @@ void gen_maze(){
     static int length = 0;	
     int tmp;
 
-    //if( work == false ) return;
     if( length == width * height) {
         state = 1;
         for(int i = 0; i < width*height; i++)
-            cell[i].is_open = false;
+            cell[i].isVisited = false;
         return;
     }
 
@@ -299,59 +308,56 @@ void gen_maze(){
         counter++;
         switch( dest ){
 
-            case up:
-                if( y == height-1 || cellXY(x, y + 1).is_open == true)
+            case UP:
+                if( y == height-1 || cellXY(x, y + 1).isVisited == true)
                     continue;
 
-                //std::cout << counter << " " << length  << " " << x << "," << y  << " -> " << x << "," << y+1 << std::endl;
-                cellXY(x, y + 1).is_open = true;
+                cellXY(x, y + 1).isVisited = true;
 
-                cellXY(x, y + 1).road[ down ] = true;
-                cellXY(x, y).road[ up ] = true;
+                cellXY(x, y + 1).pathWay[ DOWN ] = true;
+                cellXY(x, y).pathWay[ UP ] = true;
 
                 chosen[length] = width*( y + 1 ) + x;
                 length++;
                 cellOpen = true;
                 break;
 
-            case down:
-                if( y == 0 || cellXY(x, y - 1).is_open == true )
+            case DOWN:
+                if( y == 0 || cellXY(x, y - 1).isVisited == true )
                     continue;
 
-                //std::cout << counter << " " << length  << " " << x << "," << y  << " -> " << x << "," << y-1 << std::endl;
-                cellXY(x, y - 1).is_open = true;
+                cellXY(x, y - 1).isVisited = true;
 
-                cellXY(x, y - 1).road[ up ] = true;
-                cellXY(x, y).road[ down ] = true;
+                cellXY(x, y - 1).pathWay[ UP ] = true;
+                cellXY(x, y).pathWay[ DOWN ] = true;
 
                 chosen[length] = width*(y - 1) + x;
                 length++;
                 cellOpen = true;
                 break;
 
-            case right:
-                if( x == width-1 || cellXY(x + 1, y).is_open == true )
+            case RIGHT:
+                if( x == width-1 || cellXY(x + 1, y).isVisited == true )
                     continue;
 
-                //std::cout << counter << " " << length  << " " << x << "," << y  << " -> " << x+1 << "," << y << std::endl;
-                cellXY(x + 1,  y).is_open = true;
+                cellXY(x + 1,  y).isVisited = true;
 
-                cellXY(x + 1,  y).road[ left ] = true;
-                cellXY(x,  y).road[ right ] = true;
+                cellXY(x + 1,  y).pathWay[ LEFT ] = true;
+                cellXY(x,  y).pathWay[ RIGHT ] = true;
 
                 chosen[length] = width * y + x + 1;
                 length++;
                 cellOpen = true;
                 break;
 
-            case left:
-                if( x == 0 || cellXY(x - 1,  y).is_open == true )
+            case LEFT:
+                if( x == 0 || cellXY(x - 1,  y).isVisited == true )
                     continue;
 
-                cellXY(x - 1,  y).is_open = true;
+                cellXY(x - 1,  y).isVisited = true;
 
-                cellXY(x - 1,  y).road[ right ] = true;
-                cellXY(x,  y).road[ left ] = true;
+                cellXY(x - 1,  y).pathWay[ RIGHT ] = true;
+                cellXY(x,  y).pathWay[ LEFT ] = true;
 
                 chosen[length] = width * y + x - 1;
                 length++;
@@ -389,8 +395,8 @@ void init() {
 void draw_texture()
 {
     GLuint id = 13;
-    if (!gb_finder -> loadTexture("textures/celestial002.png", &id)) {
-        std::cout << "Texture not found\n";
+    if (!ball -> loadTexture("textures/celestial002.png", &id)) {
+        cout << "Texture not found\n";
     }
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, id);
@@ -436,14 +442,14 @@ void display()
 
     draw_maze();
 
-    if(gb_finder != NULL) {
+    if(ball != NULL) {
         const double SHIFTFACTOR_X = -10.0;
         const double SHIFTFACTOR_Y = -11.5;
 
         glLoadIdentity();
-        glTranslatef(gb_finder->CurrentX() + SHIFTFACTOR_X, gb_finder->CurrentY() + SHIFTFACTOR_Y, 0);
+        glTranslatef(ball->CurrentX() + SHIFTFACTOR_X, ball->CurrentY() + SHIFTFACTOR_Y, 0);
         glScalef(0.1, 0.1, 1);
-        gb_finder->Draw();
+        ball->Draw();
     }
 
     glLoadIdentity();
@@ -455,7 +461,6 @@ void display()
     glutSwapBuffers();
 }
 
-// the space bar toggles making maze or pause
 void keyFunc( unsigned char key, int x, int y ){
     switch (key) {
         case 13:
@@ -466,13 +471,12 @@ void keyFunc( unsigned char key, int x, int y ){
 
 void path_finding()
 {
-    static PathFinder finder(::starting_x, ::starting_y, ::width, ::height);
-    static int x = ::starting_x;
-    static int y = ::starting_y;
+    static Ball finder(init_x, init_y, width, height);
+    static int x = init_x;
+    static int y = init_y;
 
-    if (gb_finder == NULL) {
-        gb_finder = &finder;	// to use in other functions
-        finder.SetBodyColor(1.0, 1.0, 1.0);
+    if (ball == NULL) {
+        ball = &finder;	
     }
 
     finder.UpdateStatus();
@@ -480,34 +484,34 @@ void path_finding()
         return;
     }
 
-    if(x == ::goal_x && y == ::goal_y) {	// if get the goal
-        ::state++;
+    if(x == goal_x && y == goal_y) {	
+        state++;
         return;
     }
 
     if (userInputLastDirection > -1) {
         switch (userInputLastDirection) {
-            case up:
-                if(cellXY(x, y).road[up] == true && y < ::height-1 ) {
-                    finder.set_dest(PathFinder::UP);
+            case UP:
+                if(cellXY(x, y).pathWay[UP] == true && y < height-1 ) {
+                    finder.set_dest(UP);
                     y++;
                 }
                 break;
-            case down:
-                if(cellXY(x,  y).road[down] == true && y > 0 ) {
-                    finder.set_dest(PathFinder::DOWN);
+            case DOWN:
+                if(cellXY(x,  y).pathWay[DOWN] == true && y > 0 ) {
+                    finder.set_dest(DOWN);
                     y--;
                 }
                 break;
-            case right:
-                if(cellXY(x, y).road[right] == true && x < ::width-1 ) {
-                    finder.set_dest(PathFinder::RIGHT);
+            case RIGHT:
+                if(cellXY(x, y).pathWay[RIGHT] == true && x < width-1 ) {
+                    finder.set_dest(RIGHT);
                     x++;
                 }
                 break;
-            case left:
-                if(cellXY(x, y).road[left] == true && x > 0 ) {
-                    finder.set_dest(PathFinder::LEFT);
+            case LEFT:
+                if(cellXY(x, y).pathWay[LEFT] == true && x > 0 ) {
+                    finder.set_dest(LEFT);
                     x--;
                 }
                 break;
@@ -537,16 +541,16 @@ void goal_ceremony()
 void specialKeyFunc( int key, int x, int y ){
     switch (key) {
         case GLUT_KEY_RIGHT:
-            userInputLastDirection = right;
+            userInputLastDirection = RIGHT;
             break;
         case GLUT_KEY_LEFT:
-            userInputLastDirection = left;
+            userInputLastDirection = LEFT;
             break;
         case GLUT_KEY_DOWN:
-            userInputLastDirection = down;
+            userInputLastDirection = DOWN;
             break;
         case GLUT_KEY_UP:
-            userInputLastDirection = up;
+            userInputLastDirection = UP;
             break;
     }
 
@@ -574,11 +578,9 @@ void idle()
 }
 
 int main( int argc, char ** argv ){
-    using namespace std;
 
     srand( ( unsigned )time( NULL ) );
 
-    /* input the size of the maze */
     while(1) {
         cout<<"Input width, height (From 5 to 30)"<<endl;
         cin >> width >> height;
@@ -589,19 +591,17 @@ int main( int argc, char ** argv ){
         }
     }
 
-    /* help message */
     cout << endl;
     cout << "Enter key : start/stop working" << endl;
     cout << "Arrow key : move the character" << endl;
     cout << endl << "SOLVE THE MAZE!!!" << endl;
 
-    cell = new Cell[width * height];
+    cell = new GridBox[width * height];
 
     R = 0.0;
     G = 0.0;
     B = 0.0;
 
-    //timefactor = INIT_TIMEFACTOR;
     ViewChange_x = 0;
     ViewChange_y = 0;
 
