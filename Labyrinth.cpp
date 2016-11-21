@@ -402,17 +402,9 @@ void draw_texture()
     glDisable(GL_TEXTURE_2D);
 }
 
-
-void display()
+void draw_initial_maze()
 {
     double x;
-
-    glClearColor( R, G, B, 0.0 );
-    glClear( GL_COLOR_BUFFER_BIT );
-    draw_texture();
-
-    glColor3f( 1.0, 1.0, 1.0 );	
-
     glLoadIdentity();
     glBegin( GL_LINES );
     for( x = 1 ; x < width+2 ; x++ ){
@@ -424,7 +416,20 @@ void display()
         glVertex2f( width*10+10.0 , x*10 );
     }
     glEnd();
+}
 
+void display()
+{
+    double x;
+
+    glClearColor( R, G, B, 0.0 );
+    glClear( GL_COLOR_BUFFER_BIT );
+    draw_texture();
+
+    glColor3f( 1.0, 1.0, 1.0 );	
+
+    draw_initial_maze();
+    
     update_labyrinth();
 
     if(ball != NULL) {
@@ -459,6 +464,7 @@ void process_input()
     static Ball finder(init_x, init_y, width, height);
     static int x = init_x;
     static int y = init_y;
+    static int countdown = 0;
 
     if (ball == NULL) {
         ball = &finder;	
@@ -470,8 +476,11 @@ void process_input()
     }
 
     if(x == goal_x && y == goal_y) {	
-        state++;
-        return;
+        countdown++;
+        if (countdown > 100) {
+            state++;
+            return;
+        }
     }
 
     if (userInputLastDirection > -1) {
@@ -562,10 +571,8 @@ void background_process()
     display();
 }
 
-int main( int argc, char ** argv ){
-
-    srand( ( unsigned )time( NULL ) );
-
+void input_width_and_height()
+{
     while(1) {
         cout<<"Input width, height (From 5 to 30)"<<endl;
         cin >> width >> height;
@@ -575,11 +582,25 @@ int main( int argc, char ** argv ){
             break;
         }
     }
+}
 
+void display_options()
+{
     cout << endl;
     cout << "Enter key : start/stop isWorkinging" << endl;
     cout << "Arrow key : move the character" << endl;
     cout << endl << "SOLVE THE MAZE!!!" << endl;
+}
+
+
+int main( int argc, char ** argv ){
+
+    srand( ( unsigned )time( NULL ) );
+
+    input_width_and_height();
+
+    display_options();
+
 
     grid = new GridBox[width * height];
 
