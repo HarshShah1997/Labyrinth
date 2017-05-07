@@ -529,7 +529,7 @@ void wait_for_finish()
     count++;
     glLoadIdentity();
 
-    if( count > 100) state++;
+    if( count > 0) state++;
 }
 
 void input_arrow_keys( int key, int x, int y ){
@@ -587,7 +587,7 @@ void input_width_and_height()
 void display_options()
 {
     cout << endl;
-    cout << "Enter key : start/stop isWorkinging" << endl;
+    cout << "Enter key : start/stop" << endl;
     cout << "Arrow key : move the character" << endl;
     cout << endl << "SOLVE THE MAZE!!!" << endl;
 }
